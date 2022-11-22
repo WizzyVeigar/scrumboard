@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:boardview/board_item.dart';
 import 'package:boardview/board_list.dart';
 import 'package:boardview/boardview.dart';
@@ -5,7 +7,12 @@ import 'package:boardview/boardview_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:scrumboard/BoardListObject.dart';
 
-class ScrumBoardScreen extends StatelessWidget {
+class ScrumBoardScreen extends StatefulWidget {
+  @override
+  State<ScrumBoardScreen> createState() => _ScrumBoardScreenState();
+}
+
+class _ScrumBoardScreenState extends State<ScrumBoardScreen> {
   List<BoardPostColumn> data = [
     //In here you map the data to your Scrum board
     BoardPostColumn(title: 'Row 1', items: [
@@ -29,7 +36,23 @@ class ScrumBoardScreen extends StatelessWidget {
     ])
   ].toList();
 
-  BoardViewController boardViewController = new BoardViewController();
+  late BoardViewController boardViewController;
+  late TextEditingController textEditingController;
+
+  @override
+  void initState() {
+    super.initState();
+
+    boardViewController = BoardViewController();
+    textEditingController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    textEditingController.dispose();
+
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,13 +77,9 @@ class ScrumBoardScreen extends StatelessWidget {
       onStartDragList: (int? listIndex) {},
       //OnTap for each individual task, open an edit dialog box
       onTapList: (int? listIndex) async {
-        showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: Text(data[listIndex!].title),
-              );
-            });
+        final inputText = await OpenEditColumnNameDialog(listIndex!);
+        if (inputText == null || inputText.isEmpty) return;
+        setState(() => data[listIndex].title = inputText);
       },
       onDropList: (int? listIndex, int? oldListIndex) {
         //Update our local list data
@@ -75,7 +94,7 @@ class ScrumBoardScreen extends StatelessWidget {
             child: Padding(
                 padding: EdgeInsets.all(5),
                 child: Text(
-                  list.title!,
+                  list.title,
                   style: TextStyle(fontSize: 20),
                 ))),
       ],
@@ -103,7 +122,7 @@ class ScrumBoardScreen extends StatelessWidget {
               builder: (BuildContext context) {
                 return AlertDialog(
                   title: Text(data[listIndex!].items[itemIndex!].title),
-                  content: Text('This is a text ' + (itemIndex + 1).toString()),
+                  content: Text('This is a text ${itemIndex + 1}'),
                 );
               });
         },
@@ -113,5 +132,50 @@ class ScrumBoardScreen extends StatelessWidget {
             child: Text(itemObject.title!),
           ),
         ));
+  }
+
+  Future<String?> OpenEditColumnNameDialog(int listIndex) => showDialog<String>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(data[listIndex!].title),
+          actions: [
+            TextButton(
+              onPressed: UpdateColumnName,
+              child: const Text(
+                'Submit',
+                style: TextStyle(fontSize: 20),
+              ),
+            ),
+          ],
+          content: Padding(
+            padding: const EdgeInsets.fromLTRB(0, 15, 0, 15),
+            child: Wrap(
+              children: [
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    TextField(
+                      autofocus: true,
+                      onSubmitted: (value) => UpdateColumnName(),
+                      controller: textEditingController,
+                      decoration: InputDecoration(
+                          hintText: "Row " + (listIndex + 1).toString(),
+                          hintStyle: const TextStyle(fontSize: 20),
+                          labelText: 'Edit Column Name',
+                          labelStyle: TextStyle(fontSize: 20),
+                          border: const UnderlineInputBorder(),
+                          focusedBorder: const UnderlineInputBorder()),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+  UpdateColumnName() async {
+    Navigator.of(context).pop(textEditingController.text);
+    textEditingController.clear();
   }
 }
