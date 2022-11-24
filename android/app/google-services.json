@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "184959061243",
+    "firebase_url": "https://h4-scrumboard-827ed-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "h4-scrumboard-827ed",
+    "storage_bucket": "h4-scrumboard-827ed.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:184959061243:android:d5e31f6dae539ab960345e",
+        "android_client_info": {
+          "package_name": "com.example.scrumboard"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "184959061243-8i73di3mls38s2clm8e5f9tpgrh0490c.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDKnqJfLN97d9a8hUDNGzYYGLuPXtpbNQ0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "184959061243-8i73di3mls38s2clm8e5f9tpgrh0490c.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "184959061243-o0mkqoqobhm6080uu35n6frq7r1p67r6.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.scrumboard"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

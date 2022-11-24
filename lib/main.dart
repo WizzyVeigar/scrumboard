@@ -1,11 +1,17 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:scrumboard/Screens/ScrumBoard_Screen.dart';
-import 'Screens/Screens.dart';
-import 'dart:math' as math;
+import 'package:scrumboard/firebase_options.dart';
 
-void main() {
-  runApp(MyBoardApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  runApp(const MyBoardApp());
 }
 
 class MyBoardApp extends StatefulWidget {
@@ -27,7 +33,7 @@ class _MyBoardAppState extends State<MyBoardApp> {
       theme: ThemeData(
           primarySwatch: Colors.blue,
           visualDensity: VisualDensity.adaptivePlatformDensity),
-      home: Home(),
+      home: const Home(),
     );
   }
 }
@@ -39,7 +45,7 @@ class Home extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Color(0xFF1E0AB5),
+        backgroundColor: const Color(0xFF1E0AB5),
         elevation: 0,
         title: Row(
           children: const <Widget>[
@@ -58,7 +64,7 @@ class Home extends StatelessWidget {
           ],
         ),
         bottom: PreferredSize(
-          preferredSize: Size.fromHeight(1.0),
+          preferredSize: const Size.fromHeight(1.0),
           child: Container(
             color: Colors.grey[300],
             height: 1.0,

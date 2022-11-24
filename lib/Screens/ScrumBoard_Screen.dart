@@ -1,11 +1,15 @@
-import 'dart:developer';
-
 import 'package:boardview/board_item.dart';
 import 'package:boardview/board_list.dart';
 import 'package:boardview/boardview.dart';
 import 'package:boardview/boardview_controller.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:scrumboard/BoardListObject.dart';
+import 'package:scrumboard/FireBaseConnecter.dart';
+import 'package:scrumboard/firebase_options.dart';
+
+import '../Podo/BoardPost.dart';
+import '../Podo/BoardPostColumn.dart';
 
 class ScrumBoardScreen extends StatefulWidget {
   @override
@@ -13,28 +17,29 @@ class ScrumBoardScreen extends StatefulWidget {
 }
 
 class _ScrumBoardScreenState extends State<ScrumBoardScreen> {
-  List<BoardPostColumn> data = [
-    //In here you map the data to your Scrum board
-    BoardPostColumn(title: 'Row 1', items: [
-      BoardPost(title: 'Data', from: 'Person1'),
-      BoardPost(title: 'Data2', from: 'Person2')
-    ]),
-    BoardPostColumn(title: 'Row 2', items: [
-      BoardPost(title: 'Data', from: 'Person1'),
-      BoardPost(title: 'Data2', from: 'Person2')
-    ]),
-    BoardPostColumn(title: 'Row 3', items: [
-      BoardPost(title: 'Data', from: 'Person1'),
-      BoardPost(title: 'Data2', from: 'Person2')
-    ]),
-    BoardPostColumn(title: 'Row 4', items: [
-      BoardPost(title: 'Data', from: 'Person1'),
-      BoardPost(title: 'Data', from: 'Person2'),
-      BoardPost(title: 'Data', from: 'Person3'),
-      BoardPost(title: 'Data', from: 'Person4'),
-      BoardPost(title: 'Data2', from: 'Person5')
-    ])
-  ].toList();
+  late List<BoardPostColumn> dbData;
+  // List<BoardPostColumn> data = [
+  //   //In here you map the data to your Scrum board
+  //   BoardPostColumn(title: 'To Do', items: [
+  //     BoardPost(title: 'Data', from: 'Person1'),
+  //     BoardPost(title: 'Data2', from: 'Person2')
+  //   ]),
+  //   BoardPostColumn(title: 'Ongoing', items: [
+  //     BoardPost(title: 'Data', from: 'Person1'),
+  //     BoardPost(title: 'Data2', from: 'Person2')
+  //   ]),
+  //   BoardPostColumn(title: 'Backburner', items: [
+  //     BoardPost(title: 'Data', from: 'Person1'),
+  //     BoardPost(title: 'Data2', from: 'Person2')
+  //   ]),
+  //   BoardPostColumn(title: 'Done', items: [
+  //     BoardPost(title: 'Data', from: 'Person1'),
+  //     BoardPost(title: 'Data', from: 'Person2'),
+  //     BoardPost(title: 'Data', from: 'Person3'),
+  //     BoardPost(title: 'Data', from: 'Person4'),
+  //     BoardPost(title: 'Data2', from: 'Person5')
+  //   ])
+  // ];
 
   late BoardViewController boardViewController;
   late TextEditingController textEditingController;
@@ -50,52 +55,86 @@ class _ScrumBoardScreenState extends State<ScrumBoardScreen> {
   @override
   void dispose() {
     textEditingController.dispose();
-
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    List<BoardList> _lists = [];
-    for (int i = 0; i < data.length; i++) {
-      _lists.add(CreateBoardList(data[i], context));
-    }
-    return BoardView(
-      lists: _lists,
-      boardViewController: boardViewController,
+    return FutureBuilder(
+      future: getDatabase(),
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          print('Im in build snapshot');
+          List<BoardList> lists = [];
+          for (int i = 0; i < dbData.length; i++) {
+            lists.add(createBoardList(dbData[i], context));
+          }
+          return BoardView(
+            lists: lists,
+            boardViewController: boardViewController,
+          );
+        }
+        return const CircularProgressIndicator();
+      },
     );
   }
 
   ///Creates a [BoardList] with drag n drop functionality
-  BoardList CreateBoardList(BoardPostColumn list, BuildContext context) {
+  BoardList createBoardList(BoardPostColumn list, BuildContext context) {
     List<BoardItem> items = [];
-    for (int i = 0; i < list.items!.length; i++) {
-      items.insert(i, buildBoardItem(list.items![i], context));
+    for (BoardPost element in list.items) {
+      if (kDebugMode) {
+        print('List: ${list.title} item: ${element.from}');
+      }
+    }
+
+    for (int i = 0; i < list.items.length; i++) {
+      items.insert(i, buildBoardItem(list.items[i], context));
     }
 
     return BoardList(
       onStartDragList: (int? listIndex) {},
       //OnTap for each individual task, open an edit dialog box
       onTapList: (int? listIndex) async {
-        final inputText = await OpenEditColumnNameDialog(listIndex!);
+        final inputText = await openEditColumnNameDialog(listIndex!);
         if (inputText == null || inputText.isEmpty) return;
-        setState(() => data[listIndex].title = inputText);
+        setState(() => dbData[listIndex].title = inputText);
       },
       onDropList: (int? listIndex, int? oldListIndex) {
         //Update our local list data
-        var list = data[oldListIndex!];
-        data.removeAt(oldListIndex!);
-        data.insert(listIndex!, list);
+        var list = dbData[oldListIndex!];
+        dbData.removeAt(oldListIndex);
+        dbData.insert(listIndex!, list);
       },
-      headerBackgroundColor: Color(0xFFEBECF0),
-      backgroundColor: Color(0xFFEBECF0),
+      headerBackgroundColor: const Color(0xFFEBECF0),
+      backgroundColor: const Color(0xFFEBECF0),
       header: [
         Expanded(
             child: Padding(
-                padding: EdgeInsets.all(5),
-                child: Text(
-                  list.title,
-                  style: TextStyle(fontSize: 20),
+                padding: const EdgeInsets.all(5),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      list.title,
+                      style: const TextStyle(fontSize: 20),
+                    ),
+                    Card(
+                      elevation: 1,
+                      child: IconButton(
+                          mouseCursor: SystemMouseCursors.click,
+                          style: IconButton.styleFrom(
+                            foregroundColor: Colors.black,
+                            backgroundColor: Colors.white,
+                          ),
+                          onPressed: (() async {
+                            // FireBaseConnector connector = FireBaseConnector();
+                            // await connector.SaveAllColumns(data);
+                            createNewBoardPost(list);
+                          }),
+                          icon: const Icon(Icons.add_outlined)),
+                    )
+                  ],
                 ))),
       ],
       items: items,
@@ -110,9 +149,9 @@ class _ScrumBoardScreenState extends State<ScrumBoardScreen> {
         onDropItem: (int? listIndex, int? itemIndex, int? oldListIndex,
             int? oldItemIndex, BoardItemState? state) {
           //Used to update our local item data
-          var item = data[oldListIndex!].items![oldItemIndex!];
-          data[oldListIndex].items!.removeAt(oldItemIndex!);
-          data[listIndex!].items!.insert(itemIndex!, item);
+          var item = dbData[oldListIndex!].items[oldItemIndex!];
+          dbData[oldListIndex].items.removeAt(oldItemIndex);
+          dbData[listIndex!].items.insert(itemIndex!, item);
         },
         //Holder for tasks, use ontap to rename the thingy
         onTapItem:
@@ -121,7 +160,7 @@ class _ScrumBoardScreenState extends State<ScrumBoardScreen> {
               context: context,
               builder: (BuildContext context) {
                 return AlertDialog(
-                  title: Text(data[listIndex!].items[itemIndex!].title),
+                  title: Text(dbData[listIndex!].items[itemIndex!].title),
                   content: Text('This is a text ${itemIndex + 1}'),
                 );
               });
@@ -129,18 +168,18 @@ class _ScrumBoardScreenState extends State<ScrumBoardScreen> {
         item: Card(
           child: Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Text(itemObject.title!),
+            child: Text(itemObject.title),
           ),
         ));
   }
 
-  Future<String?> OpenEditColumnNameDialog(int listIndex) => showDialog<String>(
+  Future<String?> openEditColumnNameDialog(int listIndex) => showDialog<String>(
         context: context,
         builder: (context) => AlertDialog(
-          title: Text(data[listIndex!].title),
+          title: Text(dbData[listIndex].title),
           actions: [
             TextButton(
-              onPressed: UpdateColumnName,
+              onPressed: updateColumnName,
               child: const Text(
                 'Submit',
                 style: TextStyle(fontSize: 20),
@@ -156,15 +195,16 @@ class _ScrumBoardScreenState extends State<ScrumBoardScreen> {
                   children: [
                     TextField(
                       autofocus: true,
-                      onSubmitted: (value) => UpdateColumnName(),
+                      onSubmitted: (value) => updateColumnName(),
                       controller: textEditingController,
-                      decoration: InputDecoration(
-                          hintText: "Row " + (listIndex + 1).toString(),
-                          hintStyle: const TextStyle(fontSize: 20),
+                      decoration: const InputDecoration(
+                          //hintText: "Row " + (listIndex + 1).toString(),
+                          hintText: "Row Name",
+                          hintStyle: TextStyle(fontSize: 20),
                           labelText: 'Edit Column Name',
                           labelStyle: TextStyle(fontSize: 20),
-                          border: const UnderlineInputBorder(),
-                          focusedBorder: const UnderlineInputBorder()),
+                          border: UnderlineInputBorder(),
+                          focusedBorder: UnderlineInputBorder()),
                     ),
                   ],
                 ),
@@ -174,8 +214,30 @@ class _ScrumBoardScreenState extends State<ScrumBoardScreen> {
         ),
       );
 
-  UpdateColumnName() async {
+  updateColumnName() async {
     Navigator.of(context).pop(textEditingController.text);
     textEditingController.clear();
+  }
+
+  updatePost(BoardPost updatedPost) {}
+
+  createNewBoardPost(BoardPostColumn column) {
+    if (kDebugMode) {
+      print(column.title);
+    }
+    setState(() {
+      dbData
+          .firstWhere((element) => element.items == column.items)
+          .items
+          .add(BoardPost(title: 'TEST NEW', from: 'TESTPERSON'));
+    });
+  }
+
+  Future<List<BoardPostColumn>> getDatabase() async {
+    //First add data to data[]
+    FireBaseConnector connector = FireBaseConnector();
+    dbData = await connector.GetDataBase();
+    // print("DATA HAS THIS MANY ELEMENSTS: ${data.length}");
+    return dbData;
   }
 }
