@@ -2,44 +2,48 @@ import 'package:boardview/board_item.dart';
 import 'package:boardview/board_list.dart';
 import 'package:boardview/boardview.dart';
 import 'package:boardview/boardview_controller.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:scrumboard/FireBaseConnecter.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:scrumboard/firebase_options.dart';
 
 import '../Podo/BoardPost.dart';
 import '../Podo/BoardPostColumn.dart';
 
 class ScrumBoardScreen extends StatefulWidget {
+  ScrumBoardScreen({super.key});
+
   @override
   State<ScrumBoardScreen> createState() => _ScrumBoardScreenState();
 }
 
 class _ScrumBoardScreenState extends State<ScrumBoardScreen> {
   late List<BoardPostColumn> dbData;
-  // List<BoardPostColumn> data = [
-  //   //In here you map the data to your Scrum board
-  //   BoardPostColumn(title: 'To Do', items: [
-  //     BoardPost(title: 'Data', from: 'Person1'),
-  //     BoardPost(title: 'Data2', from: 'Person2')
-  //   ]),
-  //   BoardPostColumn(title: 'Ongoing', items: [
-  //     BoardPost(title: 'Data', from: 'Person1'),
-  //     BoardPost(title: 'Data2', from: 'Person2')
-  //   ]),
-  //   BoardPostColumn(title: 'Backburner', items: [
-  //     BoardPost(title: 'Data', from: 'Person1'),
-  //     BoardPost(title: 'Data2', from: 'Person2')
-  //   ]),
-  //   BoardPostColumn(title: 'Done', items: [
-  //     BoardPost(title: 'Data', from: 'Person1'),
-  //     BoardPost(title: 'Data', from: 'Person2'),
-  //     BoardPost(title: 'Data', from: 'Person3'),
-  //     BoardPost(title: 'Data', from: 'Person4'),
-  //     BoardPost(title: 'Data2', from: 'Person5')
-  //   ])
-  // ];
+  late FireBaseConnector connector;
+  List<BoardPostColumn> testData = [
+    //In here you map the data to your Scrum board
+    BoardPostColumn(title: 'To Do', items: [
+      BoardPost(title: 'Data', from: 'Person1'),
+      BoardPost(title: 'Data2', from: 'Person2')
+    ]),
+    BoardPostColumn(title: 'Ongoing', items: [
+      BoardPost(title: 'Data', from: 'Person1'),
+      BoardPost(title: 'Data2', from: 'Person2')
+    ]),
+    BoardPostColumn(title: 'Backburner', items: [
+      BoardPost(title: 'Data', from: 'Person1'),
+      BoardPost(title: 'Data2', from: 'Person2')
+    ]),
+    BoardPostColumn(title: 'Done', items: [
+      BoardPost(title: 'Data', from: 'Person1'),
+      BoardPost(title: 'Data', from: 'Person2'),
+      BoardPost(title: 'Data', from: 'Person3'),
+      BoardPost(title: 'Data', from: 'Person4'),
+      BoardPost(title: 'Data2', from: 'Person5')
+    ])
+  ];
 
   late BoardViewController boardViewController;
   late TextEditingController textEditingController;
@@ -64,7 +68,6 @@ class _ScrumBoardScreenState extends State<ScrumBoardScreen> {
       future: getDatabase(),
       builder: (context, snapshot) {
         if (snapshot.hasData) {
-          print('Im in build snapshot');
           List<BoardList> lists = [];
           for (int i = 0; i < dbData.length; i++) {
             lists.add(createBoardList(dbData[i], context));
@@ -74,7 +77,7 @@ class _ScrumBoardScreenState extends State<ScrumBoardScreen> {
             boardViewController: boardViewController,
           );
         }
-        return const CircularProgressIndicator();
+        return Center(child: const CircularProgressIndicator());
       },
     );
   }
@@ -82,14 +85,14 @@ class _ScrumBoardScreenState extends State<ScrumBoardScreen> {
   ///Creates a [BoardList] with drag n drop functionality
   BoardList createBoardList(BoardPostColumn list, BuildContext context) {
     List<BoardItem> items = [];
-    for (BoardPost element in list.items) {
-      if (kDebugMode) {
-        print('List: ${list.title} item: ${element.from}');
-      }
+    for (BoardPost element in list.items!) {
+      // if (kDebugMode) {
+      //   print('List: ${list.title} item: ${element.from}');
+      // }
     }
 
-    for (int i = 0; i < list.items.length; i++) {
-      items.insert(i, buildBoardItem(list.items[i], context));
+    for (int i = 0; i < list.items!.length; i++) {
+      items.insert(i, buildBoardItem(list.items![i], context));
     }
 
     return BoardList(
@@ -116,7 +119,7 @@ class _ScrumBoardScreenState extends State<ScrumBoardScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      list.title,
+                      list.title!,
                       style: const TextStyle(fontSize: 20),
                     ),
                     Card(
@@ -128,8 +131,6 @@ class _ScrumBoardScreenState extends State<ScrumBoardScreen> {
                             backgroundColor: Colors.white,
                           ),
                           onPressed: (() async {
-                            // FireBaseConnector connector = FireBaseConnector();
-                            // await connector.SaveAllColumns(data);
                             createNewBoardPost(list);
                           }),
                           icon: const Icon(Icons.add_outlined)),
@@ -149,9 +150,13 @@ class _ScrumBoardScreenState extends State<ScrumBoardScreen> {
         onDropItem: (int? listIndex, int? itemIndex, int? oldListIndex,
             int? oldItemIndex, BoardItemState? state) {
           //Used to update our local item data
-          var item = dbData[oldListIndex!].items[oldItemIndex!];
-          dbData[oldListIndex].items.removeAt(oldItemIndex);
-          dbData[listIndex!].items.insert(itemIndex!, item);
+          if (listIndex != oldListIndex || itemIndex != oldItemIndex) {
+            var item = dbData[oldListIndex!].items![oldItemIndex!];
+            dbData[oldListIndex].items!.removeAt(oldItemIndex);
+            dbData[listIndex!].items!.insert(itemIndex!, item);
+            connector.MovePost(
+                item, oldListIndex, oldItemIndex, listIndex, itemIndex);
+          }
         },
         //Holder for tasks, use ontap to rename the thingy
         onTapItem:
@@ -160,7 +165,7 @@ class _ScrumBoardScreenState extends State<ScrumBoardScreen> {
               context: context,
               builder: (BuildContext context) {
                 return AlertDialog(
-                  title: Text(dbData[listIndex!].items[itemIndex!].title),
+                  title: Text(dbData[listIndex!].items![itemIndex!].title!),
                   content: Text('This is a text ${itemIndex + 1}'),
                 );
               });
@@ -168,7 +173,7 @@ class _ScrumBoardScreenState extends State<ScrumBoardScreen> {
         item: Card(
           child: Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Text(itemObject.title),
+            child: Text(itemObject.title!),
           ),
         ));
   }
@@ -176,10 +181,12 @@ class _ScrumBoardScreenState extends State<ScrumBoardScreen> {
   Future<String?> openEditColumnNameDialog(int listIndex) => showDialog<String>(
         context: context,
         builder: (context) => AlertDialog(
-          title: Text(dbData[listIndex].title),
+          title: Text(dbData[listIndex].title!),
           actions: [
             TextButton(
-              onPressed: updateColumnName,
+              onPressed: (() {
+                updateColumnName(listIndex);
+              }),
               child: const Text(
                 'Submit',
                 style: TextStyle(fontSize: 20),
@@ -195,7 +202,7 @@ class _ScrumBoardScreenState extends State<ScrumBoardScreen> {
                   children: [
                     TextField(
                       autofocus: true,
-                      onSubmitted: (value) => updateColumnName(),
+                      onSubmitted: (value) => updateColumnName,
                       controller: textEditingController,
                       decoration: const InputDecoration(
                           //hintText: "Row " + (listIndex + 1).toString(),
@@ -214,30 +221,41 @@ class _ScrumBoardScreenState extends State<ScrumBoardScreen> {
         ),
       );
 
-  updateColumnName() async {
+  updateColumnName(int listIndex) async {
+    connector = FireBaseConnector();
     Navigator.of(context).pop(textEditingController.text);
+    //FB connector
+    connector.UpdateColumnName(listIndex, textEditingController.text);
     textEditingController.clear();
   }
 
   updatePost(BoardPost updatedPost) {}
 
-  createNewBoardPost(BoardPostColumn column) {
-    if (kDebugMode) {
-      print(column.title);
-    }
+  createNewBoardPost(BoardPostColumn column) async {
+    // if (kDebugMode) {
+    //   print(column.title);
+    // }
+    int index = dbData.indexWhere((element) => element == column);
+    BoardPost post = await connector.CreateNewBoardPost(index);
     setState(() {
       dbData
           .firstWhere((element) => element.items == column.items)
-          .items
-          .add(BoardPost(title: 'TEST NEW', from: 'TESTPERSON'));
+          .items!
+          .add(post);
     });
   }
 
   Future<List<BoardPostColumn>> getDatabase() async {
-    //First add data to data[]
-    FireBaseConnector connector = FireBaseConnector();
+    connector = FireBaseConnector();
+    // connector.SaveAllColumns(testData);
     dbData = await connector.GetDataBase();
-    // print("DATA HAS THIS MANY ELEMENSTS: ${data.length}");
     return dbData;
+    // if (dbData.isNotEmpty) {
+    // }
+
+    // print('I AM NOT HERE');
+    // connector.SaveAllColumns(testData);
+    // dbData = testData;
+    // return dbData;
   }
 }

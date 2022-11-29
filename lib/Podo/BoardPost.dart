@@ -1,12 +1,19 @@
 class BoardPost {
-  String title;
-  String from;
+  String? title;
+  String? from;
 
   BoardPost({required this.title, required this.from});
 
-  Map toJson() => {"title": title, "from": from};
+  factory BoardPost.fromJson(dynamic json) {
+    final title = json['title'];
+    final from = json['from'];
+    return BoardPost(title: title, from: from);
+  }
 
-  factory BoardPost.fromJson(Map<String, dynamic> json) {
-    return BoardPost(title: json['title'], from: json['from']);
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['title'] = this.title;
+    data['from'] = this.from;
+    return data;
   }
 }

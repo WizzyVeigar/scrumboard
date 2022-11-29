@@ -1,37 +1,35 @@
-import 'dart:convert';
-import 'dart:ffi';
-
-import 'package:flutter/foundation.dart';
-
 import 'BoardPost.dart';
 
 class BoardPostColumn {
-  String title;
-  List<BoardPost> items;
+  String? title;
+  List<BoardPost>? items;
 
   BoardPostColumn({
     required this.title,
     required this.items,
   });
 
-  Map toJson() {
-    List<Map>? items =
-        this.items != null ? this.items.map((i) => i.toJson()).toList() : null;
-
-    return {
-      "title": title,
-      "items": items,
-    };
+  factory BoardPostColumn.fromJson(dynamic json) {
+    try {
+      final title = json['title'];
+      List<BoardPost> items = List.empty(growable: true);
+      final itemsdata = json['items'] as List<dynamic>?;
+      for (var i = 0; i < itemsdata!.length; i++) {
+        if (itemsdata[i] != null) items.add(BoardPost.fromJson(itemsdata[i]));
+      }
+      return BoardPostColumn(title: title, items: items);
+    } catch (e) {
+      print(e);
+      return BoardPostColumn(title: "Error Column", items: []);
+    }
   }
 
-  factory BoardPostColumn.fromJson(Map<String, dynamic> json) {
-    var dynamics = json['items'] as List;
-    print(dynamics.runtimeType);
-
-    List<BoardPost> items = dynamics.map((e) => BoardPost.fromJson(e)).toList();
-    return BoardPostColumn(
-      title: json['title'],
-      items: items,
-    );
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['title'] = this.title;
+    if (this.items != null) {
+      data['items'] = this.items!.map((v) => v.toJson()).toList();
+    }
+    return data;
   }
 }
