@@ -1,12 +1,12 @@
-import 'dart:convert';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter/foundation.dart';
 import 'package:scrumboard/Podo/BoardPost.dart';
 import 'package:scrumboard/Podo/BoardPostColumn.dart';
 
 class FireBaseConnector {
   late DatabaseReference dbRef;
 
+  //Save a List of columns to the root of the realtime database
   Future<void> SaveAllColumns(List<BoardPostColumn> lists) async {
     dbRef = FirebaseDatabase.instance.ref("data");
     for (var i = 0; i < lists.length; i++) {
@@ -14,6 +14,7 @@ class FireBaseConnector {
     }
   }
 
+  ///Gets all columns and their values from the realtime database
   Future<List<BoardPostColumn>> GetDataBase() async {
     String json = '';
     Object? data;
@@ -26,6 +27,7 @@ class FireBaseConnector {
       }
 
       List<BoardPostColumn> columns = List.empty(growable: true);
+      //We turn it into a list of dynamic, because our fromJson methods can convert it from dynamics
       List<dynamic> dynamics = data as List<dynamic>;
 
       for (var i = 0; i < dynamics.length; i++) {
@@ -40,11 +42,13 @@ class FireBaseConnector {
     }
   }
 
+  ///Update the name of a clicked column
   Future<void> UpdateColumnName(int columnIndex, String newName) async {
     dbRef = FirebaseDatabase.instance.ref("data");
     await dbRef.child(columnIndex.toString()).update({'title': newName});
   }
 
+  ///Creates a new post in a designated column
   Future<BoardPost> CreateNewBoardPost(int columnIndex) async {
     dbRef = FirebaseDatabase.instance.ref("data");
     BoardPost post = BoardPost(title: "New Title", from: "New Person");
@@ -56,6 +60,7 @@ class FireBaseConnector {
     return post;
   }
 
+  ///Gets the length of a column, by an index
   Future<int?> GetItemLengthInRow(int columnIndex) async {
     dbRef = FirebaseDatabase.instance.ref("data");
     int? result;
@@ -66,6 +71,7 @@ class FireBaseConnector {
     return result;
   }
 
+  ///Move a post from one position to another
   Future<void> MovePost(BoardPost item, int oldListIndex, int oldItemIndex,
       int listIndex, int itemIndex) async {
     try {
@@ -73,11 +79,17 @@ class FireBaseConnector {
       int? result = await GetItemLengthInRow(listIndex);
       await dbRef.child("$oldListIndex/items/$oldItemIndex").remove();
       await dbRef.child("$listIndex/items/$result").set(item.toJson());
-      await BubbleSortDb();
-    } catch (e) {}
+
+      await RefreshDbValues();
+    } catch (e) {
+      if (kDebugMode) {
+        print(e);
+      }
+    }
   }
 
-  Future<void> BubbleSortDb() async {
+  ///Refreshes all the elements in the db, as to not skip any values because of deletion/updates
+  Future<void> RefreshDbValues() async {
     List<BoardPostColumn> db = await GetDataBase();
     await SaveAllColumns(db);
   }

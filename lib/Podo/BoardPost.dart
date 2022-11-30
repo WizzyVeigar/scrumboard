@@ -1,3 +1,4 @@
+///A task in our board
 class BoardPost {
   String? title;
   String? from;
@@ -11,9 +12,9 @@ class BoardPost {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['title'] = this.title;
-    data['from'] = this.from;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['title'] = title;
+    data['from'] = from;
     return data;
   }
 }

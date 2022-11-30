@@ -3,11 +3,13 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:scrumboard/Screens/ScrumBoard_Screen.dart';
+import 'package:scrumboard/Services/localStorageConnector.dart';
 import 'package:scrumboard/firebase_options.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'Widgets/NavigationDrawer.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
@@ -168,6 +170,8 @@ class _MyBoardAppState extends State<MyBoardApp> {
         .ref("usertokens")
         .child(modelInfo!)
         .set({"token": _token});
+
+    LocalStorageConnector().SetToken(_token);
   }
 
   Future<BaseDeviceInfo> fetchModelInfo() async {
@@ -214,6 +218,7 @@ class Home extends StatelessWidget {
           ),
         ),
       ),
+      drawer: const NavigationDrawer(),
       body: ScrumBoardScreen(),
     );
   }
