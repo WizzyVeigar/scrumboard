@@ -260,7 +260,6 @@ class _ScrumBoardScreenState extends State<ScrumBoardScreen> {
     connector = FireBaseConnector();
     connector.deletePost(listIndex, itemIndex);
     Navigator.of(context).pop();
-    Navigator.pop(context);
     setState(() {});
   }
 }
