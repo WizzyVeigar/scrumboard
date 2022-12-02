@@ -166,7 +166,14 @@ class _ScrumBoardScreenState extends State<ScrumBoardScreen> {
               builder: (BuildContext context) {
                 return AlertDialog(
                   title: Text(dbData[listIndex!].items![itemIndex!].title!),
-                  content: Text('This is a text ${itemIndex + 1}'),
+                  content: Row(
+                    children: [
+                      Text('This is a text ${itemIndex + 1}'),
+                      IconButton(
+                          icon: Icon(Icons.delete),
+                          onPressed: () => deleteTask(listIndex, itemIndex))
+                    ],
+                  ),
                 );
               });
         },
@@ -229,12 +236,7 @@ class _ScrumBoardScreenState extends State<ScrumBoardScreen> {
     textEditingController.clear();
   }
 
-  updatePost(BoardPost updatedPost) {}
-
   createNewBoardPost(BoardPostColumn column) async {
-    // if (kDebugMode) {
-    //   print(column.title);
-    // }
     int index = dbData.indexWhere((element) => element == column);
     BoardPost post = await connector.CreateNewBoardPost(index);
     setState(() {
@@ -245,17 +247,20 @@ class _ScrumBoardScreenState extends State<ScrumBoardScreen> {
     });
   }
 
+  ///Method
   Future<List<BoardPostColumn>> getDatabase() async {
     connector = FireBaseConnector();
     // connector.SaveAllColumns(testData);
     dbData = await connector.GetDataBase();
     return dbData;
-    // if (dbData.isNotEmpty) {
-    // }
+  }
 
-    // print('I AM NOT HERE');
-    // connector.SaveAllColumns(testData);
-    // dbData = testData;
-    // return dbData;
+  ///Deletes a specified task and updates the view
+  deleteTask(int listIndex, int itemIndex) async {
+    connector = FireBaseConnector();
+    connector.deletePost(listIndex, itemIndex);
+    Navigator.of(context).pop();
+    Navigator.pop(context);
+    setState(() {});
   }
 }

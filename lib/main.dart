@@ -34,6 +34,7 @@ void initInfo() {
     onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
   );
 
+  //Lissten to incoming messages
   FirebaseMessaging.onMessage.listen((message) async {
     // ignore: avoid_print
     print("............ onMessage.................");
@@ -46,6 +47,7 @@ void initInfo() {
       contentTitle: message.notification!.title.toString(),
       htmlFormatContentTitle: true,
     );
+    //Here we specify what channel and route id to recieve notifications from
     AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
       'channel_id',
@@ -68,6 +70,8 @@ void initInfo() {
   });
 }
 
+//We need to mark this as an entry point for the compiler,
+//so we avoid tree shaking, and it doesn't look like dead code
 @pragma('vm:entry-point')
 void notificationTapBackground(NotificationResponse notificationResponse) {
   // ignore: avoid_print

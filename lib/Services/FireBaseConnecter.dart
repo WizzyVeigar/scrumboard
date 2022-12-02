@@ -93,4 +93,9 @@ class FireBaseConnector {
     List<BoardPostColumn> db = await GetDataBase();
     await SaveAllColumns(db);
   }
+
+  Future<void> deletePost(int listIndex, int itemIndex) async {
+    dbRef = FirebaseDatabase.instance.ref("data");
+    await dbRef.child("$listIndex/items/$itemIndex").remove();
+  }
 }
